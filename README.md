@@ -1,3 +1,6 @@
+Arturo forked sinatra for kba-service because the upgraded sinatra broke one of the packages. Ask Arturo for details.
+
+
 # Sinatra
 
 [![Build Status](https://secure.travis-ci.org/sinatra/sinatra.svg)](http://travis-ci.org/sinatra/sinatra)
