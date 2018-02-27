@@ -15,6 +15,7 @@ require 'time'
 require 'uri'
 
 # other files we need
+require 'sinatra/indifferent_hash'
 require 'sinatra/show_exceptions'
 require 'sinatra/version'
 
@@ -131,7 +132,7 @@ module Sinatra
   # http://rubydoc.info/github/rack/rack/master/Rack/Response
   # http://rubydoc.info/github/rack/rack/master/Rack/Response/Helpers
   class Response < Rack::Response
-    DROP_BODY_RESPONSES = [204, 205, 304]
+    DROP_BODY_RESPONSES = [204, 304]
     def initialize(*)
       super
       headers['Content-Type'] ||= 'text/html'
@@ -460,7 +461,7 @@ module Sinatra
     # Specify response freshness policy for HTTP caches (Cache-Control header).
     # Any number of non-value directives (:public, :private, :no_cache,
     # :no_store, :must_revalidate, :proxy_revalidate) may be passed along with
-    # a Hash of value directives (:max_age, :min_stale, :s_maxage).
+    # a Hash of value directives (:max_age, :s_maxage).
     #
     #   cache_control :public, :must_revalidate, :max_age => 60
     #   => Cache-Control: public, must-revalidate, max-age=60
@@ -914,6 +915,7 @@ module Sinatra
 
     def call!(env) # :nodoc:
       @env      = env
+      @params   = IndifferentHash.new
       @request  = Request.new(env)
       @response = Response.new
       template_cache.clear if settings.reload_templates
@@ -1017,15 +1019,17 @@ module Sinatra
     def process_route(pattern, conditions, block = nil, values = [])
       route = @request.path_info
       route = '/' if route.empty? and not settings.empty_path_info?
+      route = route[0..-2] if !settings.strict_paths? && route != '/' && route.end_with?('/')
       return unless params = pattern.params(route)
 
       params.delete("ignore") # TODO: better params handling, maybe turn it into "smart" object or detect changes
       original, @params = @params, @params.merge(params) if params.any?
 
-      if pattern.is_a? Mustermann::Regular
+      regexp_exists = pattern.is_a?(Mustermann::Regular) || (pattern.respond_to?(:patterns) && pattern.patterns.any? {|subpattern| subpattern.is_a?(Mustermann::Regular)} )
+      if regexp_exists
         captures           = pattern.match(route).captures
         values            += captures
-        @params[:captures] = captures
+        @params[:captures] = captures unless captures.nil? || captures.empty?
       else
         values += params.values.flatten
       end
@@ -1066,25 +1070,6 @@ module Sinatra
       send_file path, options.merge(:disposition => nil)
     end
 
-    # Enable string or symbol key access to the nested params hash.
-    def indifferent_params(object)
-      case object
-      when Hash
-        new_hash = indifferent_hash
-        object.each { |key, value| new_hash[key] = indifferent_params(value) }
-        new_hash
-      when Array
-        object.map { |item| indifferent_params(item) }
-      else
-        object
-      end
-    end
-
-    # Creates a Hash with indifferent access.
-    def indifferent_hash
-      Hash.new { |hash, key| hash[key.to_s] if Symbol === key }
-    end
-
     # Run the block with 'throw :halt' support and apply result to the response.
     def invoke
       res = catch(:halt) { yield }
@@ -1103,8 +1088,7 @@ module Sinatra
 
     # Dispatch a request with error handling.
     def dispatch!
-      @params = indifferent_params(@request.params)
-      force_encoding(@params)
+      force_encoding(@params.merge!(@request.params))
 
       invoke do
         static! if settings.static? && (request.get? || request.head?)
@@ -1178,7 +1162,7 @@ module Sinatra
 
     class << self
       CALLERS_TO_IGNORE = [ # :nodoc:
-        /\/sinatra(\/(base|main|show_exceptions))?\.rb$/,    # all sinatra code
+        /\/sinatra(\/(base|main|show_exceptions))?\.rb$/,   # all sinatra code
         /lib\/tilt.*\.rb$/,                                 # all tilt code
         /^\(.*\)$/,                                         # generated code
         /rubygems\/(custom|core_ext\/kernel)_require\.rb$/, # rubygems require hacks
@@ -1452,7 +1436,7 @@ module Sinatra
         return unless running?
         # Use Thin's hard #stop! if available, otherwise just #stop.
         running_server.respond_to?(:stop!) ? running_server.stop! : running_server.stop
-        $stderr.puts "== Sinatra has ended his set (crowd applauds)" unless supress_messages?
+        $stderr.puts "== Sinatra has ended his set (crowd applauds)" unless suppress_messages?
         set :running_server, nil
         set :handler_name, nil
       end
@@ -1538,7 +1522,7 @@ module Sinatra
         prototype
         # Run the instance we created:
         handler.run(self, server_settings) do |server|
-          unless supress_messages?
+          unless suppress_messages?
             $stderr.puts "== Sinatra (v#{Sinatra::VERSION}) has taken the stage on #{port} for #{environment} with backup from #{handler_name}"
           end
 
@@ -1551,7 +1535,7 @@ module Sinatra
         end
       end
 
-      def supress_messages?
+      def suppress_messages?
         handler_name =~ /cgi/i || quiet
       end
 
@@ -1838,6 +1822,7 @@ module Sinatra
     set :absolute_redirects, true
     set :prefixed_redirects, false
     set :empty_path_info, nil
+    set :strict_paths, true
 
     set :app_file, nil
     set :root, Proc.new { app_file && File.expand_path(File.dirname(app_file)) }

@@ -129,7 +129,7 @@ module Sinatra
         paths.each do |pattern|
           Dir.glob(pattern) do |file|
             raise UnsupportedConfigType unless ['.yml', '.erb'].include?(File.extname(file))
-            $stderr.puts "loading config file '#{file}'" if logging?
+            logger.info "loading config file '#{file}'" if logging? && respond_to?(:logger)
             document = ERB.new(IO.read(file)).result
             yaml = config_for_env(YAML.load(document)) || {}
             yaml.each_pair do |key, value|
@@ -156,13 +156,12 @@ module Sinatra
     # returned config is a indifferently accessible Hash, which means that you
     # can get its values using Strings or Symbols as keys.
     def config_for_env(hash)
-      if hash.respond_to? :keys and hash.keys.all? { |k| environments.include? k.to_s }
+      if hash.respond_to?(:keys) && hash.keys.all? { |k| environments.include?(k.to_s) }
         hash = hash[environment.to_s] || hash[environment.to_sym]
       end
 
-      if hash.respond_to? :to_hash
-        indifferent_hash = Hash.new { |hash, key| hash[key.to_s] if Symbol === key }
-        indifferent_hash.merge hash.to_hash
+      if hash.respond_to?(:to_hash)
+        IndifferentHash[hash.to_hash]
       else
         hash
       end

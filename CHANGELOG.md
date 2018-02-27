@@ -1,4 +1,21 @@
-## 2.0.0 / 2016-08-22
+## 2.0.1 / 2018-02-17
+
+* Repair nested namespaces, by avoiding prefix duplication #1322. Fixes #1310 by Kunpei Sakai
+
+* Add pattern matches to values for Mustermann::Concat #1333. Fixes #1332 by Dawa Ometto
+
+* Ship the VERSION file with the gem, to allow local unpacking #1338 by Olle Jonsson
+
+* Fix issue with custom error handler on bad request #1351. Fixes #1350 by Jordan Owens
+
+* Override Rack::ShowExceptions#pretty to set custom template #1377. Fixes #1376 by Jordan Owens
+
+* Enhanced path validation in Windows #1379 by Orange Tsai from DEVCORE
+  * The patch fixes [CVE-2018-7212](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-7212)
+
+* Improve development support and documentation by Faheel Ahmad, Shota Iguchi, Olle Jonsson, Manabu Niseki, John Hope, Horacio, Ice-Storm, GraniteRock, Raman Skaskevich, Carlos Azuaje, 284km, Dan Rice and Zachary Scott
+
+## 2.0.0 / 2017-04-10
 
  * Use Mustermann for patterns #1086 by Konstantin Haase
 
@@ -29,6 +46,42 @@
  * Ensure template is cached only once #1021 by Patrik Rak.
 
  * Rack middleware is initialized at server runtime rather than after receiving first request #1205 by Itamar Turner-Trauring.
+
+ * Improve Session Secret documentation to encourage better security practices #1218 by Glenn Rempe
+
+ * Exposed global and per-route options for Mustermann route parsing #1233 by Mike Pastore
+
+ * Use same `session_secret` for classic and modular apps in development #1245 by Marcus Stollsteimer
+
+ * Make authenticity token length a fixed value of 32 #1181 by Jordan Owens
+
+ * Modernize Rack::Protection::ContentSecurityPolicy with CSP Level 2 and 3 Directives #1202 by Glenn Rempe
+
+ * Adds preload option to Rack:Protection:StrictTransport #1209 by Ed Robinson
+
+ * Improve BadRequest logic. Raise and handle exceptions if status is 400 #1212 by Mike Pastore
+
+ * Make Rack::Test a development dependency #1232 by Mike Pastore
+
+ * Capture exception messages of raised NotFound and BadRequest #1210 by Mike Pastore
+
+ * Add explicit set method to contrib/cookies to override cookie settings #1240 by Andrew Allen
+
+ * Avoid executing filters even if prefix matches with other namespace #1253 by namusyaka
+
+ * Make `#has_key?` also indifferent in access, can accept String or Symbol #1262 by Stephen Paul Weber
+
+ * Add `allow_if` option to bypass json csrf protection #1265 by Jordan Owens
+
+ * rack-protection: Bundle StrictTransport, CookieTossing, and CSP #1267 by Mike Pastore
+
+ * Add `:strict_paths` option for managing trailing slashes #1273 by namusyaka
+
+ * Add full IndifferentHash implementation to params #1279 by Mike Pastore
+
+## 1.4.8 / 2017-01-30
+
+ * Fix the deprecation warning from Ruby about Fixnum. #1235 by Akira Matsuda
 
 ## 1.4.7 / 2016-01-24
 
@@ -578,7 +631,7 @@ Backported from 1.3.0:
 
  * The request object was shared between multiple Sinatra instances in the
    same middleware chain. This caused issues if any non-sinatra routing
-   happend in-between two of those instances, or running a request twice
+   happened in-between two of those instances, or running a request twice
    against an application (described in the README). The caching was reverted.
    See GH#239 and GH#256 for more infos. (Konstantin Haase)
 

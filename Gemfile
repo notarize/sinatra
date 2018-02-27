@@ -14,11 +14,12 @@ gem 'rake'
 gem 'rack', git: 'https://github.com/rack/rack.git'
 gem 'rack-test', '>= 0.6.2'
 gem "minitest", "~> 5.0"
+gem 'yard'
 
 gem "rack-protection", path: "rack-protection"
 gem "sinatra-contrib", path: "sinatra-contrib"
 
-gem "twitter-text", "1.14.0"
+gem "twitter-text", "1.14.7"
 
 if RUBY_ENGINE == 'jruby'
   gem 'nokogiri', '!= 1.5.0'
@@ -63,6 +64,7 @@ if RUBY_ENGINE == "rbx"
   gem 'json'
   gem 'rubysl'
   gem 'rubysl-test-unit'
+  gem 'erubi'
 end
 
 platforms :jruby do
